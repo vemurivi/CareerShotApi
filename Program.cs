@@ -3,12 +3,15 @@ using Azure.Data.Tables;
 using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using Microsoft.OpenApi.Models;
+using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -32,14 +35,12 @@ if (app.Environment.IsDevelopment())
 }
 
 // Load configuration settings from environment variables
-var blobServiceEndpoint = Environment.GetEnvironmentVariable("BlobServiceEndpoint");
-var blobServiceSasToken = Environment.GetEnvironmentVariable("BlobServiceSasToken");
-var storageAccountConnectionString = Environment.GetEnvironmentVariable("StorageAccountConnectionString");
+var blobServiceEndpoint = builder.Configuration["BlobServiceEndpoint"];
+var blobServiceSasToken = builder.Configuration["BlobServiceSasToken"];
+var storageAccountConnectionString = builder.Configuration["StorageAccountConnectionString"];
 
 var blobServiceClient = new BlobServiceClient(new Uri($"{blobServiceEndpoint}?{blobServiceSasToken}"));
 var tableClient = new TableClient(storageAccountConnectionString, "careershotinformation");
-
-var app = builder.Build();
 
 app.MapPost("/api/register", async (HttpRequest req) =>
 {
