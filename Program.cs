@@ -1,13 +1,12 @@
 using Azure;
-using Azure.Data.Tables;
 using Azure.Storage.Blobs;
+using Azure.Data.Tables;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,20 +33,27 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseHttpsRedirection();
+
 // Load configuration settings from environment variables
-var blobServiceEndpoint = builder.Configuration["BlobServiceEndpoint"];
-var blobServiceSasToken = builder.Configuration["BlobServiceSasToken"];
-var storageAccountConnectionString = builder.Configuration["StorageAccountConnectionString"];
+var blobServiceEndpoint = Environment.GetEnvironmentVariable("BlobServiceEndpoint");
+var blobServiceSasToken = Environment.GetEnvironmentVariable("BlobServiceSasToken");
+var storageAccountConnectionString = Environment.GetEnvironmentVariable("StorageAccountConnectionString");
+
+Console.WriteLine($"BlobServiceEndpoint: {blobServiceEndpoint}");
+Console.WriteLine($"BlobServiceSasToken: {blobServiceSasToken}");
+Console.WriteLine($"StorageAccountConnectionString: {storageAccountConnectionString}");
+
+if (string.IsNullOrEmpty(blobServiceEndpoint) || string.IsNullOrEmpty(blobServiceSasToken) || string.IsNullOrEmpty(storageAccountConnectionString))
+{
+    throw new InvalidOperationException("One or more environment variables are not set.");
+}
 
 var blobServiceClient = new BlobServiceClient(new Uri($"{blobServiceEndpoint}?{blobServiceSasToken}"));
 var tableClient = new TableClient(storageAccountConnectionString, "careershotinformation");
 
-app.MapPost("/api/register", async (HttpRequest req) =>
+app.MapPost("/api/register", async ([FromBody] RegisterRequest data) =>
 {
-    using var reader = new StreamReader(req.Body);
-    var body = await reader.ReadToEndAsync();
-    var data = JsonConvert.DeserializeObject<RegisterRequest>(body);
-
     var formData = new UserData
     {
         PartitionKey = data.Name,  // Using full name as PartitionKey
@@ -78,23 +84,23 @@ app.Run();
 
 public class UserData : ITableEntity
 {
-    public string PartitionKey { get; set; }
-    public string RowKey { get; set; }
+    public string PartitionKey { get; set; } = string.Empty;
+    public string RowKey { get; set; } = string.Empty;
     public DateTimeOffset? Timestamp { get; set; }
-    public string Name { get; set; }
-    public string Description { get; set; }
-    public string LinkedIn { get; set; }
-    public string GitHub { get; set; }
-    public string Skills { get; set; } // JSON string representing the skills
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string LinkedIn { get; set; } = string.Empty;
+    public string GitHub { get; set; } = string.Empty;
+    public string Skills { get; set; } = string.Empty; // JSON string representing the skills
     public ETag ETag { get; set; }
 }
 
 public class RegisterRequest
 {
-    public string Name { get; set; }
-    public string Description { get; set; }
-    public string LinkedIn { get; set; }
-    public string GitHub { get; set; }
-    public Dictionary<string, List<string>> Skills { get; set; }
-    public List<IFormFile> Files { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string LinkedIn { get; set; } = string.Empty;
+    public string GitHub { get; set; } = string.Empty;
+    public Dictionary<string, List<string>> Skills { get; set; } = new Dictionary<string, List<string>>();
+    public List<IFormFile> Files { get; set; } = new List<IFormFile>();
 }
