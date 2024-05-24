@@ -59,11 +59,22 @@ if (string.IsNullOrEmpty(blobServiceEndpoint) || string.IsNullOrEmpty(blobServic
 var blobServiceClient = new BlobServiceClient(new Uri($"{blobServiceEndpoint}?{blobServiceSasToken}"));
 var tableClient = new TableClient(storageAccountConnectionString, "careershotinformation");
 
-app.MapPost("/api/register", async ([FromBody] RegisterRequest data) =>
+app.MapPost("/api/register", async (HttpRequest req) =>
 {
+    if (!req.HasFormContentType)
+    {
+        return Results.BadRequest("Unsupported media type");
+    }
+
+    var form = await req.ReadFormAsync();
+    var jsonData = form["jsonData"];
+    var data = JsonConvert.DeserializeObject<RegisterRequest>(jsonData);
+
+       var firstLetter = data.Name[0].ToString().ToUpper();  // Get the first letter and convert to uppercase
+
     var formData = new UserData
     {
-        PartitionKey = data.Name,  // Using full name as PartitionKey
+        PartitionKey = firstLetter,  // Using the first letter of the name as the PartitionKey
         RowKey = Guid.NewGuid().ToString(),  // Unique identifier for each form submission
         Name = data.Name,
         Description = data.Description,
@@ -76,7 +87,7 @@ app.MapPost("/api/register", async ([FromBody] RegisterRequest data) =>
     await tableClient.AddEntityAsync(formData);
 
     // Upload files to Blob Storage
-    foreach (var file in data.Files)
+    foreach (var file in form.Files)
     {
         var containerClient = blobServiceClient.GetBlobContainerClient("media-dev");
         var blobClient = containerClient.GetBlobClient(file.FileName);
