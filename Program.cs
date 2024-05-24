@@ -23,8 +23,15 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// Conditionally use HTTPS redirection based on environment variable
+var useHttpsRedirection = Environment.GetEnvironmentVariable("USE_HTTPS_REDIRECTION")?.ToLower() == "true";
+
+if (useHttpsRedirection)
+{
+    app.UseHttpsRedirection();
+}
+
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
@@ -33,7 +40,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+app.UseRouting();
 
 // Load configuration settings from environment variables
 var blobServiceEndpoint = Environment.GetEnvironmentVariable("BlobServiceEndpoint");
@@ -78,7 +85,8 @@ app.MapPost("/api/register", async ([FromBody] RegisterRequest data) =>
     }
 
     return Results.Ok("Data saved to Table Storage and files uploaded to Blob Storage.");
-});
+})
+.WithName("Register");
 
 app.Run();
 
