@@ -89,8 +89,10 @@ app.MapPost("/api/register", async (HttpRequest req) =>
     // Upload files to Blob Storage
     foreach (var file in form.Files)
     {
+        var extension = Path.GetExtension(file.FileName);
+        var blobName = $"{data.Name}{extension}";
         var containerClient = blobServiceClient.GetBlobContainerClient("mediadev");
-        var blobClient = containerClient.GetBlobClient(file.FileName);
+        var blobClient = containerClient.GetBlobClient(blobName);
         using var stream = file.OpenReadStream();
         await blobClient.UploadAsync(stream, true);
     }
