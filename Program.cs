@@ -14,7 +14,20 @@ using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Load configuration settings from environment variables
+var blobServiceEndpoint = Environment.GetEnvironmentVariable("BlobServiceEndpoint");
+var blobServiceSasToken = Environment.GetEnvironmentVariable("BlobServiceSasToken");
+var storageAccountConnectionString = Environment.GetEnvironmentVariable("StorageAccountConnectionString");
+
+if (string.IsNullOrEmpty(blobServiceEndpoint) || string.IsNullOrEmpty(blobServiceSasToken) || string.IsNullOrEmpty(storageAccountConnectionString))
+{
+    throw new InvalidOperationException("One or more environment variables are not set.");
+}
+
+Console.WriteLine($"BlobServiceEndpoint: {blobServiceEndpoint}");
+Console.WriteLine($"BlobServiceSasToken: {blobServiceSasToken}");
+Console.WriteLine($"StorageAccountConnectionString: {storageAccountConnectionString}");
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -38,6 +51,7 @@ builder.Services.AddSwaggerGen(c =>
         new string[] { }
     }});
 });
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -58,17 +72,6 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Conditionally use HTTPS redirection based on environment variable
-var useHttpsRedirection = Environment.GetEnvironmentVariable("USE_HTTPS_REDIRECTION")?.ToLower() == "true";
-
-if (useHttpsRedirection)
-{
-    app.UseHttpsRedirection();
-}
-
-app.UseAuthentication();
-app.UseAuthorization();
-
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
@@ -78,21 +81,9 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
     });
 }
 
-app.UseRouting();
-
-// Load configuration settings from environment variables
-var blobServiceEndpoint = Environment.GetEnvironmentVariable("BlobServiceEndpoint");
-var blobServiceSasToken = Environment.GetEnvironmentVariable("BlobServiceSasToken");
-var storageAccountConnectionString = Environment.GetEnvironmentVariable("StorageAccountConnectionString");
-
-Console.WriteLine($"BlobServiceEndpoint: {blobServiceEndpoint}");
-Console.WriteLine($"BlobServiceSasToken: {blobServiceSasToken}");
-Console.WriteLine($"StorageAccountConnectionString: {storageAccountConnectionString}");
-
-if (string.IsNullOrEmpty(blobServiceEndpoint) || string.IsNullOrEmpty(blobServiceSasToken) || string.IsNullOrEmpty(storageAccountConnectionString))
-{
-    throw new InvalidOperationException("One or more environment variables are not set.");
-}
+app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 
 var blobServiceClient = new BlobServiceClient(new Uri($"{blobServiceEndpoint}?{blobServiceSasToken}"));
 var tableClient = new TableClient(storageAccountConnectionString, "careershotinformation");
@@ -108,7 +99,7 @@ app.MapPost("/api/register", [Authorize] async (HttpRequest req) =>
     var jsonData = form["jsonData"];
     var data = JsonConvert.DeserializeObject<RegisterRequest>(jsonData);
 
-       var firstLetter = data.Name[0].ToString().ToUpper();  // Get the first letter and convert to uppercase
+    var firstLetter = data.Name[0].ToString().ToUpper();  // Get the first letter and convert to uppercase
 
     var formData = new UserData
     {
