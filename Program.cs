@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using System;
+using System.Text;
 using System.Collections.Generic;
 
 var builder = WebApplication.CreateBuilder(args);
