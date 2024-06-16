@@ -151,6 +151,11 @@ public class RegisterRequest
     public string Description { get; set; } = string.Empty;
     public string LinkedIn { get; set; } = string.Empty;
     public string GitHub { get; set; } = string.Empty;
-    public Dictionary<string, List<string>> Skills { get; set; } = new Dictionary<string, List<string>>();
-    public List<IFormFile> Files { get; set; } = new List<IFormFile>();
+    public Dictionary<string, List<Skill>> Skills { get; set; } = new Dictionary<string, List<Skill>>();
+}
+
+public class Skill
+{
+    public string Name { get; set; } = string.Empty;
+    public string Level { get; set; } = string.Empty;
 }
