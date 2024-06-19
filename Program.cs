@@ -112,6 +112,8 @@ app.MapPost("/api/register", [Authorize] async (HttpRequest req) =>
         Skills = JsonConvert.SerializeObject(data.Skills)
     };
 
+     var normalizedName = data.Name.ToLower().Replace(" ", "");
+
     // Save form data to Table Storage
     await tableClient.AddEntityAsync(formData);
 
@@ -119,7 +121,7 @@ app.MapPost("/api/register", [Authorize] async (HttpRequest req) =>
     foreach (var file in form.Files)
     {
         var extension = Path.GetExtension(file.FileName);
-        var blobName = $"{data.Name}{extension}";
+        var blobName = $"{normalizedName}{extension}";
         var containerClient = blobServiceClient.GetBlobContainerClient("mediadev");
         var blobClient = containerClient.GetBlobClient(blobName);
         using var stream = file.OpenReadStream();
